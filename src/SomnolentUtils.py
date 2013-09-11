@@ -8,6 +8,16 @@ content.
 
 from urllib.request import urlopen
 from html.parser import HTMLParser
+from html.entities import name2codepoint
+
+TWEET_CHAR_MAX = 140
+SOMNOLENT_URL = 'http://www.somnolentworks.com/'
+EXTENSION = '.html'
+
+class SomnolentAPI:
+    """ An API for accessing tweet-ready content from somnolentworks.com """
+
+
 
 class SomnolentStory:
     """ A representation of a story as displayed on somnolentworks.com. """
@@ -19,7 +29,15 @@ class SomnolentStory:
         res = urlopen(url)
         parser = SomnolentHTMLParser()
         parser.feed(str(res.read()))
-        story = parser.get_story()
+        (self.title, self.story) = parser.get_story()
+
+    def get_title(self):
+        """ Returns string representing the title of the story. """
+        return self.title
+
+    def get_story(self):
+        """ Returns string representing the story. """
+        return self.story
 
 class SomnolentHTMLParser(HTMLParser):
     """ A parser designed to parse story pages of somnolentworks.com. """
@@ -39,11 +57,20 @@ class SomnolentHTMLParser(HTMLParser):
         else:
             self._state = None
 
+    def handle_endtag(self, tag):
+        self._state = None
+
     def handle_data(self, data):
-        if self._state == self.TITLE_TAG:
-            self.parsedTitle += data
-        elif self._state == self.STORY_TAG:
-            self.parsedStory += data
+        self._write_data(data)
+
+    def handle_entityref(self, name):
+        self._write_data(chr(name2codepoint[name]))
+
+    def handle_charref(self, name):
+        if name.startswith('x'):
+            self._write_data(chr(int(name[1:], 16)))
+        else:
+            self._write_data(chr(int(name)))
 
     def get_story(self):
         """
@@ -52,3 +79,33 @@ class SomnolentHTMLParser(HTMLParser):
         representing the story itself.
         """
         return (self.parsedTitle, self.parsedStory)
+
+    def _write_data(self, data):
+        if self._state == self.TITLE_TAG:
+            self.parsedTitle += data.strip()
+        elif self._state == self.STORY_TAG:
+            self.parsedStory += data.strip()
+
+class SomnolentLatestStoryParser(HTMLParser)
+    """ A parser that provides the latest somnolent story number. """
+    def __init__(self):
+        super().__init__()
+        self.latest = None
+
+    def get_latest_story_number(self):
+        """ Returns the most recently written story number. """
+        res = urlopen(SOMNOLENT_URL)
+        self.feed(str(res.read()))
+        if self.latest is None:
+            raise SomnolentParseException('Could not parse latest story')
+        return self.latest
+
+    def handle_starttag(self, tag, attrs):
+
+    def handle_endtag(self, tag):
+
+    def handle_data(self, data):
+
+class SomnolentParseException(Exception):
+    def __init__(self, value):
+        self.value = value
