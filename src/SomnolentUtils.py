@@ -6,18 +6,70 @@ in various ways.  Most notably, it provides an API for easy retrieval of story
 content.
 """
 
+import re
+from itertools import product
+from random import randint, choice
 from urllib.request import urlopen
 from html.parser import HTMLParser
 from html.entities import name2codepoint
 
-TWEET_CHAR_MAX = 140
 SOMNOLENT_URL = 'http://www.somnolentworks.com/'
-EXTENSION = '.html'
 
 class SomnolentAPI:
     """ An API for accessing tweet-ready content from somnolentworks.com """
 
+    NEGATIVE_LOOKAHEAD = [ # Patterns that are allowed to be after a period.
 
+        ] #+ list('0123456789')
+
+    NEGATIVE_LOOKBEHIND = [ # Patterns that are allowed to preceed a period.
+        'mr', 'ms', 'mrs', 'dr', 'sr', 'sra'
+        ] #+ list('bcdefghjklmnopqrstuvwxyz')
+
+    def __init__(self):
+        self.num_stories = SomnolentLatestStoryParser().get_story_number()
+        self._lookahead_pattern = self._get_lookahead_pattern()
+        self._lookbehind_pattern = self._get_lookbehind_pattern()
+
+    def get_random_story_content(self):
+        """ Returns a tuple of (story title, story sentence body) """
+        story_id = self._get_random_story_number()
+        story = SomnolentStory(SOMNOLENT_URL + str(story_id) + '.html')
+        return (story.get_title(), self._parse_sentence(story.get_story()))
+
+    def _parse_sentence(self, story):
+        return choice(re.findall(
+            '[a-zA-Z0-9]+.*?' + self._lookbehind_pattern +
+            '[.?!]' + self._lookahead_pattern,
+            story
+            ))
+
+    def _get_random_story_number(self):
+        return randint(1, self.num_stories)
+
+    def _get_lookahead_pattern(self):
+        return ''.join(map(lambda word: '(?!' + word + ')',
+            self._generate_word_case_permutations(self.NEGATIVE_LOOKAHEAD)
+            ))
+
+    def _get_lookbehind_pattern(self):
+        return ''.join(map(lambda word: '(?<!' + word + ')',
+            self._generate_word_case_permutations(self.NEGATIVE_LOOKBEHIND)
+            ))
+
+    def _generate_word_case_permutations(self, words):
+        """
+        words: A list of strings to be case-permuted.
+        Returns a list of strings where all permutations of capitalization are
+        present.
+        For example: ['me', 'I'] -> ['ME', 'Me', 'mE', 'me', 'I', 'i'].
+        """
+        result = []
+        for word in words:
+            result += list(
+                ''.join(w) for w in product(*zip(word.lower(), word.upper()))
+                )
+        return result
 
 class SomnolentStory:
     """ A representation of a story as displayed on somnolentworks.com. """
@@ -81,18 +133,20 @@ class SomnolentHTMLParser(HTMLParser):
         return (self.parsedTitle, self.parsedStory)
 
     def _write_data(self, data):
+        data = re.sub('\\\\n|\\\\t|\\\\r', '', data) # Weird escaped whitespace.
         if self._state == self.TITLE_TAG:
-            self.parsedTitle += data.strip()
+            self.parsedTitle += data
         elif self._state == self.STORY_TAG:
-            self.parsedStory += data.strip()
+            self.parsedStory += data
 
-class SomnolentLatestStoryParser(HTMLParser)
+class SomnolentLatestStoryParser(HTMLParser):
     """ A parser that provides the latest somnolent story number. """
+
     def __init__(self):
         super().__init__()
         self.latest = None
 
-    def get_latest_story_number(self):
+    def get_story_number(self):
         """ Returns the most recently written story number. """
         res = urlopen(SOMNOLENT_URL)
         self.feed(str(res.read()))
@@ -101,10 +155,12 @@ class SomnolentLatestStoryParser(HTMLParser)
         return self.latest
 
     def handle_starttag(self, tag, attrs):
-
-    def handle_endtag(self, tag):
-
-    def handle_data(self, data):
+        if self.latest is None and tag == 'a':
+            for (name, val) in attrs: # Loop through list and find first url
+                                      # with numbers in it
+                if (name == 'href' and
+                    re.search(SOMNOLENT_URL + '\d+\.html', val)):
+                    self.latest = int(re.search('\d+', val).group(0))
 
 class SomnolentParseException(Exception):
     def __init__(self, value):
