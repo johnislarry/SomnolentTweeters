@@ -20,11 +20,12 @@ class SomnolentAPI:
 
     NEGATIVE_LOOKAHEAD = [ # Patterns that are allowed to be after a period.
 
-        ] #+ list('0123456789')
+        ] + list('0123456789')
 
+    # TODO: Allow capital letters sans 'A' and 'I'.
     NEGATIVE_LOOKBEHIND = [ # Patterns that are allowed to preceed a period.
         'mr', 'ms', 'mrs', 'dr', 'sr', 'sra'
-        ] #+ list('bcdefghjklmnopqrstuvwxyz')
+        ]
 
     def __init__(self):
         self.num_stories = SomnolentLatestStoryParser().get_story_number()
@@ -81,7 +82,7 @@ class SomnolentStory:
         res = urlopen(url)
         parser = SomnolentHTMLParser()
         parser.feed(str(res.read()))
-        (self.title, self.story) = parser.get_story()
+        self.title, self.story = parser.get_story()
 
     def get_title(self):
         """ Returns string representing the title of the story. """
