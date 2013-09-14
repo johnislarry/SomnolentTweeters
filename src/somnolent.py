@@ -24,7 +24,7 @@ def hashtagify(s):
     Takes in a string and returns its hashtagified version.  That is to say,
     the string with whitespace removed and a '#' prepended to it.
     """
-    return '#' + re.sub(' |\t|\n|\r', '', s)
+    return '#' + ''.join(map(lambda x: x.capitalize(), s.split()))
 
 def main():
     """
