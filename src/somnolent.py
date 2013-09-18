@@ -22,9 +22,14 @@ except IndexError:
 def hashtagify(s):
     """
     Takes in a string and returns its hashtagified version.  That is to say,
-    the string with whitespace removed and a '#' prepended to it.
+    the string with whitespace, periods, and apostrophes removed and a '#'
+    prepended to it.
     """
-    return '#' + ''.join(map(lambda x: x.capitalize(), s.split()))
+    return re.sub(
+        '\.|\'',
+        '',
+        '#' + ''.join(map(lambda x: x.capitalize(), s.split()))
+        )
 
 def main():
     """

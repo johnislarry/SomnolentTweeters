@@ -136,6 +136,7 @@ class SomnolentHTMLParser(HTMLParser):
     def _write_data(self, data):
         data = re.sub('\\\\n|\\\\t|\\\\r', '', data) # Weird escaped whitespace.
         if self._state == self.TITLE_TAG:
+            data = re.sub('\\\\\'', '\'', data) # Un-escape quotes in title.
             self.parsedTitle += data
         elif self._state == self.STORY_TAG:
             self.parsedStory += data
