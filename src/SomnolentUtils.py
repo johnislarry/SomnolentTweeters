@@ -24,7 +24,7 @@ class SomnolentAPI:
 
     # TODO: Allow capital letters sans 'A' and 'I'.
     NEGATIVE_LOOKBEHIND = [ # Patterns that are allowed to preceed a period.
-        'mr', 'ms', 'mrs', 'dr', 'sr', 'sra'
+        'mr', 'ms', 'mrs', 'dr', 'sr', 'sra', 'vs'
         ]
 
     def __init__(self):
