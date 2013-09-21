@@ -25,11 +25,11 @@ def hashtagify(s):
     the string with whitespace, periods, and apostrophes removed and a '#'
     prepended to it.
     """
-    return re.sub(
-        '\.|\'',
-        '',
-        '#' + ''.join(map(lambda x: x.capitalize(), s.split()))
-        )
+    return re.sub('\.|\'', '',
+        '#' + ''.join(map(
+            lambda x: x.capitalize(),
+            re.split(' |\t|\n|\r|-', s)
+        )))
 
 def main():
     """
